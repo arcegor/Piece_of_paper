@@ -1,24 +1,24 @@
 package ru.greenatom.demo.controller;
 
-import com.fasterxml.jackson.annotation.JsonView;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.greenatom.demo.domain.Document;
-import ru.greenatom.demo.domain.DocumentType;
-import ru.greenatom.demo.domain.SecrecyLevel;
-import ru.greenatom.demo.domain.Views;
+import ru.greenatom.demo.domain.User;
 import ru.greenatom.demo.domain.dto.CreatedDocumentDto;
 import ru.greenatom.demo.domain.dto.SavedDocumentDto;
 import ru.greenatom.demo.repo.*;
 import ru.greenatom.demo.service.DocumentService;
 
 import javax.validation.Valid;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * TODO
@@ -60,7 +60,7 @@ public class DocumentController {
     @ResponseBody
     public Map<String, Object> create(
             @RequestBody @Valid CreatedDocumentDto createdDocumentDto,
-            BindingResult bindingResult
+            BindingResult bindingResult, Authentication user
     ) {
         Map<String, Object> strings = new HashMap<>();
         logger.info("documentBuildingCreateModel собрана:" + !bindingResult.hasErrors());
@@ -72,40 +72,11 @@ public class DocumentController {
             });
             strings.put("error", errors);
         } else {
-            strings.put("id", this.documentService.create(createdDocumentDto).getDocumentId());
+            strings.put("id", this.documentService.create(createdDocumentDto,(User) user.getPrincipal()).getDocumentId());
         }
         return strings;
     }
 
-    @Deprecated
-    @GetMapping("/test")
-    @ResponseBody
-    @JsonView(Views.documents.class)
-    public Document getDocumentId() {
-        Document document = new Document();
-        document.setCreationDate(LocalDateTime.now());
-        document.setDocumentName("name");
-        document.setPassword("name");
-
-        //   document.setAccessTypes(     Collections.singleton(Action.SAVE));
-
-        SecrecyLevel secrecyLevel = new SecrecyLevel();
-        secrecyLevel.setSecrecyName("SecrecyName");
-        secrecyLevel.setDocuments(Collections.singleton(document));
-
-        DocumentType documentType = new DocumentType();
-        documentType.setDocumentTypeName("DocumentTypeName");
-        documentType.setDocuments(Collections.singleton(document));
-
-        document.setDocumentSecrecyLevel(secrecyLevel);
-        document.setDocumentType(documentType);
-
-        this.secrecyLevelRepo.save(secrecyLevel);
-        this.documentTypeRepo.save(documentType);
-        this.documentRepo.save(document);
-
-        return document;
-    }
 
     @PutMapping("/delete/{idDocument}")
     @ResponseBody
